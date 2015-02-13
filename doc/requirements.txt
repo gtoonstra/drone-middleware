@@ -1,0 +1,47 @@
+Requirements:
+=============
+
+0. The core of the middleware is a message bus. 
+1. Must integrate well with drone communication protocols of any project or vendor.
+2. Must allow the mixing of various drone communication protocols at the same time.
+3. Should allow processes written in any language to connect to the middleware bus.
+4. Should have an example of a "message validator", which checks the validity of messages against the newest message definition.
+5. The communication protocol used on the message bus does not implement a specific drone communication protocol.
+   They are high level concepts.
+6. One process receives drone telemetry and then pushes messages on the middleware bus in the custom format.
+7. All coordinates are converted into the ECEF coordinate system.
+   a. ECEF is easy to convert into either WGS-84 or a NED system with a chosen reference point.
+   b. ECEF is not ambiguous and it is easier to specify distances and perform route calculations with ECEF.
+8. Algorithms, processes, databases, etc. should therefore prefer ECEF. 
+9. Messages are specified and implemented using cap'n proto:
+    a. It allows optional fields, so upgrades and versions have a better chance to work together.
+    b. It performs validation of the message.
+    c. It is fast and easy.
+    d. It is implemented for various languages.
+10. The middleware system has a "storage" place, which can be queried to retrieve information about the 
+    current vehicles, systems and processes that are connected.
+11. The middleware system requires processes to send heartbeats every 60 seconds. If a heartbeat is not repeated,
+    that process is considered dead.
+12. Processes can thus also elegantly sign off from the middleware system.
+13. There is a registry of existing processes with a process plan and a task manager which can reconfigure the system
+    by killing and starting processes.
+14. The state of the mission, current vehicles, etc. are stored on the middleware in such a way that if a process dies,
+    the rest can continue to function on a best-effort basis and reconnecting that process has no impact on the state of the mission.
+15. Specific uav communication protocols like mavlink, pprz, radio telemetry, etc. are implemented in one process only, which
+    acts as a translator for those specific communication protocols.
+16. The frequency for drone updates on the middleware is 1 second and position / attitude updates should not be sent at a higher rate.
+    If this higher rate is required for an application, the process should connect directly to the "link" application to send them 
+    on a peer-to-peer link at the requested rate.
+17. A nodeJS server subscribes to cap'n proto messages on the request of a client and retransmits them as json. This is to allow
+    browsers, android and other types of clients to easily hook up to the message bus too (since it appears 'binary' to them).
+18. The state of vehicles is never removed even if the heartbeat did not occur. The operator must explicitly indicate the removal
+    of the state of the mission/vehicle.
+19. The middleware allows a place where data received from the video can be collected and referred to in a message.
+    So pictures for example are stored on disk in a specified place, they are not transmitted as part of a message.
+20. For now, code is implemented in python.
+21. Mavproxy can be used to connect to the remote system with a plugin for this message bus. Other GCS's can connect to the mavproxy,
+    but also to the message bus.
+22. Messages are sent with a human readable name of the message first, then the binary content. On nodeJS, the binary content is replaced
+    by json with numbers converted into strings and booleans converted to true or false strings.
+23. 
+
