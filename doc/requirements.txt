@@ -1,7 +1,7 @@
 Requirements:
 =============
 
-0. The core of the middleware is a message bus. 
+0. The core of the middleware is a message bus and a broker.
 1. Must integrate well with drone communication protocols of any project or vendor.
 2. Must allow the mixing of various drone communication protocols at the same time.
 3. Should allow processes written in any language to connect to the middleware bus.
@@ -13,11 +13,9 @@ Requirements:
    a. ECEF is easy to convert into either WGS-84 or a NED system with a chosen reference point.
    b. ECEF is not ambiguous and it is easier to specify distances and perform route calculations with ECEF.
 8. Algorithms, processes, databases, etc. should therefore prefer ECEF. 
-9. Messages are specified and implemented using cap'n proto:
-    a. It allows optional fields, so upgrades and versions have a better chance to work together.
-    b. It performs validation of the message.
-    c. It is fast and easy.
-    d. It is implemented for various languages.
+9. Messages are specified and implemented using protobuf:
+    a. Required is not used, all fields are optional. An "invalid" default value is used to indicate a missing value.
+    b. It has support for practically all languages.
 10. The middleware system has a "storage" place, which can be queried to retrieve information about the 
     current vehicles, systems and processes that are connected.
 11. The middleware system requires processes to send heartbeats every 60 seconds. If a heartbeat is not repeated,
@@ -28,11 +26,11 @@ Requirements:
 14. The state of the mission, current vehicles, etc. are stored on the middleware in such a way that if a process dies,
     the rest can continue to function on a best-effort basis and reconnecting that process has no impact on the state of the mission.
 15. Specific uav communication protocols like mavlink, pprz, radio telemetry, etc. are implemented in one process only, which
-    acts as a translator for those specific communication protocols.
+    acts as a translator for those specific communication protocols (the "link" application).
 16. The frequency for drone updates on the middleware is 1 second and position / attitude updates should not be sent at a higher rate.
     If this higher rate is required for an application, the process should connect directly to the "link" application to send them 
     on a peer-to-peer link at the requested rate.
-17. A nodeJS server subscribes to cap'n proto messages on the request of a client and retransmits them as json. This is to allow
+17. A nodeJS server subscribes to protobuf messages on the request of a client and retransmits them as json. This is to allow
     browsers, android and other types of clients to easily hook up to the message bus too (since it appears 'binary' to them).
 18. The state of vehicles is never removed even if the heartbeat did not occur. The operator must explicitly indicate the removal
     of the state of the mission/vehicle.
@@ -43,5 +41,19 @@ Requirements:
     but also to the message bus.
 22. Messages are sent with a human readable name of the message first, then the binary content. On nodeJS, the binary content is replaced
     by json with numbers converted into strings and booleans converted to true or false strings.
-23. 
+23. Messages may contain opaque data, which are destined for the "link" app and which the link app forwards directly to the uav as is.
+24. Processes connecting to the bus must use an abstraction library to do this and not connect to the underlying bus immediately.
+    This is to allow a quick exchange of the underlying messaging system.
+25. The abstraction library specifies the interface that processes can use to connect and use the message bus.
+26. All projects used for the message bus must use a license compatible with use in commercial environments (MIT, BSD).
+27. The underlying transport for messages uses nanomsg with a message broker implementing xpub/xsub sockets, but clients
+    use pub/sub sockets to connect to the broker.
+28. Bonjour is used to advertise the broker's location and to find the broker. This removes the need for configuration of each client.
+29. The abstraction library is initialized with sender name. The send function acccepts msg class, name and the binary msg. 
+    The message is sent to a "topic" in the format <msgclass>.<msgname>.<sender> and binary msg content.
+30. Subscribers can subscribe to these messages with a wildcard at the end:
+    a. all messages of a particular class
+    b. a specific message name belonging to a particular class.
+    c. a specific message name for a specific sender (vehicle, app).
+31. The abstraction library breaks up the class, name and sender and calls the related callback function for that message name.
 
