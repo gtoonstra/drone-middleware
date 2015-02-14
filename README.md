@@ -61,7 +61,7 @@ Eventually, the idea is to publish on bonjour where the broker is located, so it
 
 When the broker is started, you can simply import the 'dmw' module and use it like so:
 
-`import dmw
+```import dmw
 import threading
 import time
 
@@ -87,9 +87,9 @@ if __name__ == "__main__":
 
     time.sleep(1)
 
-    dmw.publish( "telemetry", "position", "hello" )
+    dmw.publish( "telemetry", "position", "14.1525354 102.23324324 25.3335" )
 
     time.sleep(3)
-`
+```
 
 

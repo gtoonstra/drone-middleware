@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     time.sleep(1)
 
-    dmw.publish( "telemetry", "position", "hello" )
+    dmw.publish( "telemetry", "position", "14.1525354 102.23324324 25.3335" )
 
     time.sleep(3)
 
