@@ -8,8 +8,8 @@ AM_CFLAGS = -I$(top_srcdir)/src @AM_CFLAGS@
 # the library names to build (note we are building static libs only)
 lib_LIBRARIES = libdmw.a
 
-dmwbroker_CFLAGS = $(ZEROMQ_CFLAGS)
-dmwbroker_LIBADD= $(ZEROMQ_LIBS)
+#libdmw_a_CFLAGS = $(ZEROMQ_CFLAGS)
+#libdmw_a_LIBADD= $(ZEROMQ_LIBS)
 
 # where to install the headers on the system
 libdmw_adir = $(includedir)/libdmw
@@ -20,6 +20,9 @@ libdmw_a_HEADERS =	libdmw.h
 # the sources to add to the library and to add to the source distribution
 libdmw_a_SOURCES =	$(libdmw_a_HEADERS) \
                     libdmw.c
-						
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libdmw.pc
+
 ###############################################################################
 
