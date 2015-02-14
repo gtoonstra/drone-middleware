@@ -2,6 +2,7 @@
 
 #include "libdmw.h"
 #include "zhelpers.h"
+#include "uthash.h"
 
 #define MAX_APP_NAME      32
 #define ERR_STRING_LEN    256
@@ -10,13 +11,21 @@
 static char appname[ MAX_APP_NAME + 1 ];
 static char lasterr[ ERR_STRING_LEN ];
 
-static void *context;
-static void *subscriber;
-static void *publisher;
+static void *context = NULL;
+static void *subscriber = NULL;
+static void *publisher = NULL;
+
+struct subscription_t {
+    char topic[MAX_TOPIC_LEN]; /* key */
+    msg_callback_t *cb;
+    UT_hash_handle hh; /* makes this structure hashable */
+};
+
+struct subscription_t *subscriptions = NULL;
 
 static int get_topic( char *topic, const char *msg_class, const char *msg_name, const char *sender );
 
-int dmw_init( const char *name )
+int dmw_init_pub( const char *name )
 {
     int i = 0;
 
@@ -32,11 +41,24 @@ int dmw_init( const char *name )
     }
     strcpy( appname, name );
 
-    context = zmq_ctx_new ();
-    subscriber = zmq_socket (context, ZMQ_SUB);
-    zmq_connect (subscriber, "tcp://localhost:5558");
+    if ( !context ) {
+        context = zmq_ctx_new ();
+    }
     publisher = zmq_socket (context, ZMQ_PUB);
     zmq_connect (publisher, "tcp://localhost:5557");
+
+    return 0;
+}
+
+int dmw_init_sub( void )
+{
+    int i = 0;
+
+    if ( !context ) {
+        context = zmq_ctx_new ();
+    }
+    subscriber = zmq_socket (context, ZMQ_SUB);
+    zmq_connect (subscriber, "tcp://localhost:5558");
 
     return 0;
 }
@@ -45,12 +67,27 @@ int dmw_subscribe( const char *msg_class, const char *msg_name, const char *send
 {
     char buf[ MAX_TOPIC_LEN + 1 ] = {"\0"};
 
+    if ( !subscriber ) {
+        strcpy( lasterr, "Subscribers are not initialized. Call dwm_init_sub first." );
+        return -5;
+    }
+
     int rc = get_topic( buf, msg_class, msg_name, sender );
     if ( rc != 0 ) {
         return rc;
     }
 
     zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, buf, strlen(buf) );
+
+    struct subscription_t *sub;
+    HASH_FIND_STR(subscriptions, buf, sub);
+    if (sub==NULL) {
+        sub = (struct subscription_t *)malloc( sizeof(struct subscription_t) );
+        strcpy( sub->topic, buf );
+        sub->cb = callback;
+        HASH_ADD_STR( subscriptions, topic, sub );
+    }
+
     return 0;
 }
 
@@ -58,12 +95,25 @@ int dmw_unsubscribe( const char *msg_class, const char *msg_name, const char *se
 {
     char buf[ MAX_TOPIC_LEN + 1 ] = {"\0"};
 
+    if ( !subscriber ) {
+        strcpy( lasterr, "Subscribers are not initialized. Call dwm_init_sub first." );
+        return -5;
+    }
+
     int rc = get_topic( buf, msg_class, msg_name, sender );
     if ( rc != 0 ) {
         return rc;
     }
 
     zmq_setsockopt(subscriber, ZMQ_UNSUBSCRIBE, buf, strlen(buf) );
+
+    struct subscription_t *s;
+    HASH_FIND_STR( subscriptions, buf, s );
+    if ( s != NULL ) {
+        HASH_DEL( subscriptions, s);
+        free( s );
+    }
+
     return 0;
 }
 
@@ -71,24 +121,74 @@ int dmw_publish( const char *msg_class, const char *msg_name, const char *bytes,
 {
     char buf[ MAX_TOPIC_LEN + 1 ] = {"\0"};
 
+    if ( !publisher ) {
+        strcpy( lasterr, "Publishing is not initialized. Call dwm_init_pub first." );
+        return -6;
+    }
+
     int rc = get_topic( buf, msg_class, msg_name, appname );
     if ( rc != 0 ) {
         return rc;
     }
 
-    int size = zmq_send (publisher, bytes, len, 0);
+    // send topic first. This way it's possible to figure out how to route message later.
+    int size = zmq_send (publisher, buf, strlen (buf), ZMQ_SNDMORE);
+    size = zmq_send (publisher, bytes, len, 0);
+
     return size;
 }
 
-void dmw_get_error( char *errorstring )
+void dmw_get_error( char **errorstring )
 {
     if ( strlen( lasterr ) == 0 ) {
         errorstring = NULL;
         return;
     }
-    errorstring = (char *)malloc( strlen( lasterr ) + 1 );
-    strcpy( errorstring, lasterr );
+    *errorstring = (char *)malloc( strlen( lasterr ) + 1 );
+    strcpy( *errorstring, lasterr );
     memset( lasterr, 0x00, ERR_STRING_LEN );
+}
+
+int dmw_run()
+{
+    char *saveptr;
+    char *msg_class;
+    char *msg_name;
+    char *sender;
+    char buf[MAX_TOPIC_LEN + 1] = {"\0"};
+
+    if ( !subscriber ) {
+        strcpy( lasterr, "Subscribers are not initialized. Call dwm_init_sub first." );
+        return -5;
+    }
+
+    while (1) {
+        char *topic = s_recv (subscriber);
+        char *msg = s_recv (subscriber);
+
+        msg_class = strtok_r( topic, ".", &saveptr );
+        msg_name = strtok_r( NULL, ".", &saveptr );
+        sender = strtok_r( NULL, ".", &saveptr );
+
+        struct subscription_t *s;
+        HASH_FIND_STR( subscriptions, topic, s );
+        if ( s == NULL ) {
+            sprintf( buf, "%s.%s", msg_class, msg_name );
+            HASH_FIND_STR( subscriptions, buf, s );
+            if ( s == NULL ) {
+                HASH_FIND_STR( subscriptions, msg_class, s );
+            }
+        }
+
+        printf( "topic: %s, find str: %08x\n", topic, s );
+
+        if ( s != NULL ) {
+            s->cb( msg_class, msg_name, sender, msg );
+        }
+        free( topic );
+        free( msg );
+    }
+    return 0;
 }
 
 static int get_topic( char *topic, const char *msg_class, const char *msg_name, const char *sender )

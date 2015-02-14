@@ -2,6 +2,7 @@
 
 # initial information about the project
 AC_INIT([libdmw],[0.1],[gtoonstra])
+LT_INIT
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/libdmw.c])

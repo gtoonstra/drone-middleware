@@ -22,6 +22,7 @@ AC_HEADER_STDC
 AC_TYPE_SIZE_T
 
 PKG_CHECK_MODULES([DMW], libdmw >= 0.1)
+AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR([required library pthread missing])])
 
 # distribute additional compiler and linker flags among Makefiles
 # --> set and change these variables instead of CXXFLAGS or LDFLAGS (for user only)
