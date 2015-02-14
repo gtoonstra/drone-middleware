@@ -22,7 +22,7 @@ void *rcv_messages2(void *threadid)
     tid = (long)threadid;
     dmw_init_sub();
 
-    int rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print );
+    int rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print, NULL );
     if ( rc != 0 ) {
         printf("Ok, failed because need to init first.\n" );
         dmw_get_error( &errstr );
@@ -51,7 +51,7 @@ int main (int argc, char *argv[] )
     rc = pthread_create(&thread, NULL, rcv_messages, (void *)1);
     usleep( 500000 );
 
-    rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print );
+    rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print, NULL );
     if ( rc != 0 ) {
         printf("Ok, failed because need to init first.\n" );
         dmw_get_error( &errstr );
@@ -103,7 +103,7 @@ static void test_init_fail_function( const char *appname )
     printf( "%s\n", errstr );
 }
 
-static void subscription_print( const char *msg_class, const char *msg_name, const char *sender, const char *message )
+static void subscription_print( const char *msg_class, const char *msg_name, const char *sender, const char *message, void *user_data )
 {
     char *errstr;
 

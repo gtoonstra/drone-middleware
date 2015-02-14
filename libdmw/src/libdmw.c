@@ -18,6 +18,7 @@ static void *publisher = NULL;
 struct subscription_t {
     char topic[MAX_TOPIC_LEN]; /* key */
     msg_callback_t *cb;
+    void *user_data;
     UT_hash_handle hh; /* makes this structure hashable */
 };
 
@@ -63,7 +64,7 @@ int dmw_init_sub( void )
     return 0;
 }
 
-int dmw_subscribe( const char *msg_class, const char *msg_name, const char *sender, msg_callback_t *callback )
+int dmw_subscribe( const char *msg_class, const char *msg_name, const char *sender, msg_callback_t *callback, void *user_data )
 {
     char buf[ MAX_TOPIC_LEN + 1 ] = {"\0"};
 
@@ -85,6 +86,7 @@ int dmw_subscribe( const char *msg_class, const char *msg_name, const char *send
         sub = (struct subscription_t *)malloc( sizeof(struct subscription_t) );
         strcpy( sub->topic, buf );
         sub->cb = callback;
+        sub->user_data = user_data;
         HASH_ADD_STR( subscriptions, topic, sub );
     }
 
@@ -183,7 +185,7 @@ int dmw_run()
         printf( "topic: %s, find str: %08x\n", topic, s );
 
         if ( s != NULL ) {
-            s->cb( msg_class, msg_name, sender, msg );
+            s->cb( msg_class, msg_name, sender, msg, s->user_data );
         }
         free( topic );
         free( msg );

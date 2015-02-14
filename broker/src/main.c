@@ -34,7 +34,7 @@ int main (int argc, char *argv[] )
     rc = zmq_bind (backend, "tcp://*:5558");
     assert( rc == 0 );
 
-    /*
+
     void *capture = zmq_socket (context, ZMQ_DEALER);
     rc = zmq_bind (capture, "ipc://capture.ipc");
 
@@ -46,10 +46,10 @@ int main (int argc, char *argv[] )
 
     pthread_t capworker;
     rc = pthread_create(&capworker, NULL, proxy_capture, context);
-    */
 
-    //rc = zmq_proxy (frontend, backend, capture);
-    rc = zmq_proxy (frontend, backend, NULL );
+
+    rc = zmq_proxy (frontend, backend, capture);
+    //rc = zmq_proxy (frontend, backend, NULL );
 
     // We never get here…
     zmq_close (frontend);
