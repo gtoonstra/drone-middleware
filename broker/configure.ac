@@ -6,9 +6,8 @@ AC_INIT([dmwbroker],[0.1],[gtoonstra@github.com])
 # check if the source folder is available
 AC_CONFIG_SRCDIR([src/main.cpp])
 
-# check for C++ preprocessor and compiler
-AC_PROG_C
-AC_PROG_C
+# check for C preprocessor and compiler
+AC_PROG_CC
 
 # automake initialization (mandatory) including a check for automake API version >= 1.9
 AM_INIT_AUTOMAKE([1.9])
