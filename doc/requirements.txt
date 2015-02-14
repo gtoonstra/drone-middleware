@@ -46,8 +46,8 @@ Requirements:
     This is to allow a quick exchange of the underlying messaging system.
 25. The abstraction library specifies the interface that processes can use to connect and use the message bus.
 26. All projects used for the message bus must use a license compatible with use in commercial environments (MIT, BSD).
-27. The underlying transport for messages uses nanomsg with a message broker implementing xpub/xsub sockets, but clients
-    use pub/sub sockets to connect to the broker.
+27. The underlying transport for messages uses zeromq with a message broker implementing xpub/xsub sockets, but clients
+    use pub/sub sockets to connect to the broker. (nanomsg is still a bit too new and does not implement xpub/xsub sockets).
 28. Bonjour is used to advertise the broker's location and to find the broker. This removes the need for configuration of each client.
 29. The abstraction library is initialized with sender name. The send function acccepts msg class, name and the binary msg. 
     The message is sent to a "topic" in the format <msgclass>.<msgname>.<sender> and binary msg content.
