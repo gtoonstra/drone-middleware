@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libdmw
+Description: Library for use in drone middleware to connect processes to the message bus. 
+URL: https://github.com/gtoonstra/drone-middleware
+Version: @VERSION@
+Requires: zmq
+Libs: -L${libdir} -ldmw -lzmq
+Cflags: -I${includedir}/libdmw
+

@@ -24,6 +24,8 @@ AC_HEADER_STDC
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 
+PKG_CHECK_MODULES([ZEROMQ], libzmq >= 4.0.5)
+
 # distribute additional compiler and linker flags
 # --> set these variables instead of CXXFLAGS or LDFLAGS
 AC_SUBST([AM_CFLAGS])
@@ -33,6 +35,7 @@ AC_SUBST([LIBS])
 # files to generate via autotools (.am or .in source files)
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([src/libdmw.pc])
 
 # generate the final Makefile etc.
 AC_OUTPUT

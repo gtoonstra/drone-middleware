@@ -1,4 +1,5 @@
 .deps
 *.o
 libdmw.a
+libdmw.pc
 

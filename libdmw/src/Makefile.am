@@ -8,6 +8,9 @@ AM_CFLAGS = -I$(top_srcdir)/src @AM_CFLAGS@
 # the library names to build (note we are building static libs only)
 lib_LIBRARIES = libdmw.a
 
+dmwbroker_CFLAGS = $(ZEROMQ_CFLAGS)
+dmwbroker_LIBADD= $(ZEROMQ_LIBS)
+
 # where to install the headers on the system
 libdmw_adir = $(includedir)/libdmw
 
