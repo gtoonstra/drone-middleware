@@ -1,0 +1,11 @@
+autom4te.cache/
+configure
+compile
+depcomp
+install-sh
+missing
+Makefile
+Makefile.in
+config.log
+config.status
+

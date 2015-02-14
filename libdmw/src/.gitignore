@@ -1,0 +1,4 @@
+.deps
+*.o
+libdmw.a
+
