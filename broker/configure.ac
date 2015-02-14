@@ -4,7 +4,7 @@
 AC_INIT([dmwbroker],[0.1],[gtoonstra@github.com])
 
 # check if the source folder is available
-AC_CONFIG_SRCDIR([src/main.cpp])
+AC_CONFIG_SRCDIR([src/main.c])
 
 # check for C preprocessor and compiler
 AC_PROG_CC
