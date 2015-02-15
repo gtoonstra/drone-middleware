@@ -12,11 +12,13 @@ that solve specific planning/alerting/monitoring/retrieval problems and use your
 The main purpose of the middleware project is to make ground control software and algorithms reusable and to give it 
 the ability to evolve over time without having to rewrite algorithms in different languages. 
 
-## License stuff
+## License
 
 The license of this middleware uses ISC, a modified version of the very permissive BSD license.
 
 > http://en.wikipedia.org/wiki/ISC_license
+
+It further (for now) uses protobuf and ZeroMQ, both with permissive licenses too.
 
 Protobuf uses the new BSD license:
 
@@ -26,7 +28,8 @@ ZeroMQ uses the LGPL + static linking exception:
 
 > http://zeromq.org/area:licensing
 
-In short, you can use drone middleware in commercial applications and you only need to supply a couple of LICENSE files. 
+In short, you can use drone middleware in commercial applications and you only need to supply the copyright notice.
+
 As per the licenses specification:
 
 > Permission to use, copy, modify, and/or distribute this software for any
