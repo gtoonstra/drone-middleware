@@ -42,6 +42,7 @@ As per the licenses specification:
 * Provide a means for "mission data storage". Processes can come and go and they use this storage to figure out the current state of the mission.
 * Provide a "task manager" that keeps track of running processes and which can reconfigure the platform when mission objectives change.
 * Allow for failure and rebooting of processes. Any process should be able to determine current mission status without being required to synchronize this with a vehicle that may be in the air.
+* Make it easier for companies and organizations to integrate a "dronecode" uav into their simulation or product.
 * Specify a standardized mechanism for storing large sets of mission data like pictures and how to get to those data items.
 * Specify a set of messages for ground control communications using a formal message definition. These are high level message definitions, not low-level drone messages/commands.
 * Provide "link" apps which, based on how the mission changes state in the middleware, can send messages towards the vehicle to update the mission plan.
