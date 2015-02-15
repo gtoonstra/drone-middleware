@@ -12,6 +12,27 @@ that solve specific planning/alerting/monitoring/retrieval problems and use your
 The main purpose of the middleware project is to make ground control software and algorithms reusable and to give it 
 the ability to evolve over time without having to rewrite algorithms in different languages. 
 
+## License stuff
+
+The license of this middleware uses ISC, a modified version of the very permissive BSD license.
+
+> http://en.wikipedia.org/wiki/ISC_license
+
+Protobuf uses the new BSD license:
+
+> https://code.google.com/p/protobuf/
+
+ZeroMQ uses the LGPL + static linking exception:
+
+> http://zeromq.org/area:licensing
+
+In short, you can use drone middleware in commercial applications and you only need to supply a couple of LICENSE files. 
+As per the licenses specification:
+
+> Permission to use, copy, modify, and/or distribute this software for any
+> purpose with or without fee is hereby granted, provided that the above
+> copyright notice and this permission notice appear in all copies.
+
 ## Objectives
 
 * Provide an abstraction wrapper library for communications. The abstraction allows easier substitution of the underlying transport and solves some technical issues of the specific transport implementation.
@@ -64,8 +85,10 @@ When the broker is started, you can simply import the 'dmw' module and use it li
     import dmw
     import threading
     import time
+
     def print_rcvd_message( msg_class, msg_name, sender, message ):
         print "%s.%s.%s: %s"%( msg_class, msg_name, sender, message)
+
     class SubscriptionThread(threading.Thread):
         def run(self):
             print "initializing sub, subscribing and running"
@@ -83,5 +106,4 @@ When the broker is started, you can simply import the 'dmw' module and use it li
         time.sleep(1)
         dmw.publish( "telemetry", "position", "14.1525354 102.23324324 25.3335" )
         time.sleep(3)
-
 
