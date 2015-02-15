@@ -91,19 +91,31 @@ When the broker is started, you can simply import the 'dmw' module and use it li
 
     class SubscriptionThread(threading.Thread):
         def run(self):
-            print "initializing sub, subscribing and running"
             dmw.init_sub()
             dmw.subscribe( "telemetry", "position", "", print_rcvd_message ) 
             dmw.loop()
-            print "exited run"
 
     if __name__ == "__main__":
         dmw.init_pub( "testinpython" )
-        # Subscribe first
+        # Subscribe first on a separate thread (it enters a notification loop afterwards).
         t = SubscriptionThread()
         t.setDaemon( True )
         t.start()
+        # Give the subscription time to start and subscribe.
         time.sleep(1)
         dmw.publish( "telemetry", "position", "14.1525354 102.23324324 25.3335" )
-        time.sleep(3)
+        # Give the thread time to process and receive the message.
+        time.sleep(1)
+
+In real applications, you'd create a threading structure to deal with these messages. On GTK / python GUI apps for example you'd
+probably use the gevent loop, where you receive messages on a specific thread, but perhaps forward them as objects to the main loop
+of the application, which is the only one allowed to perform graphical updates.
+
+In other cases, you can just create a thread as shown and process them as such. Or if processing may take a long time, you may want 
+to spawn new threads to perform that processing outside the main subscription thread loop, so that messages never need to wait long to
+be picked up.
+
+The middleware doesn't even make an attempt to be clever, it only provides access to the message bus. You are responsible for further 
+integrating message flows into your application.
+
 
