@@ -1,4 +1,11 @@
 import zmq
+from dmw_zeroconf import ServiceResolver
+
+#
+# sudo apt-get install libavahi-compat-libdnssd-dev
+# 
+# sudo pip install pybonjour --allow-external pybonjour --allow-unverified pybonjour
+# 
 
 MAX_APP_NAME = 32
 MAX_TOPIC_LEN = 128
@@ -10,6 +17,11 @@ appname = None
 context = None
 subscriber = None
 publisher = None
+subip = None
+subport = None
+pubip = None
+pubport = None
+
 subscriptions = {}
 
 def get_topic( msg_class, msg_name, sender ):
@@ -37,6 +49,21 @@ def get_topic( msg_class, msg_name, sender ):
 
     return topic
 
+def init():
+    global context
+    global subip
+    global subport
+    global pubip 
+    global pubport
+
+    if context != None:
+        raise DmwException( "Library already initialized." )
+    context = zmq.Context()
+
+    resolver = ServiceResolver()
+    subip, subport = resolver.resolve_record( "_dmwsub._tcp" )
+    pubip, pubport = resolver.resolve_record( "_dmwpub._tcp" )
+
 def init_pub( name ):
     global appname
     global context
@@ -47,20 +74,28 @@ def init_pub( name ):
     if not name.isalnum() or name.isupper():
         raise DmwException( "Application name contains invalid character. Only lower-case and digits allowed." )
 
-    appname = name
     if context == None:
-        context = zmq.Context()
+        raise DmwException( "Initialize library first with init()." )
+
+    if publisher != None:
+        raise DmwException( "Publishing side already initialized." )
+
+    appname = name
     publisher = context.socket(zmq.PUB)
-    publisher.connect( "tcp://localhost:5557" )
+    publisher.connect( "tcp://%s:%d"%( pubip, pubport ) )
 
 def init_sub():
     global context
     global subscriber
 
     if context == None:
-        context = zmq.Context()
+        raise DmwException( "Initialize library first with init()." )
+
+    if subscriber != None:
+        raise DmwException( "Subscription side already initialized." )
+
     subscriber = context.socket(zmq.SUB)
-    subscriber.connect( "tcp://localhost:5558" )
+    subscriber.connect( "tcp://%s:%d"%( subip, subport ) )
 
 def subscribe( msg_class, msg_name, sender, callback ):
     global subscriber

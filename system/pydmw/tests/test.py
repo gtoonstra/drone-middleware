@@ -15,6 +15,7 @@ class SubscriptionThread(threading.Thread):
         print "exited run"
 
 if __name__ == "__main__":
+    dmw.init()
     dmw.init_pub( "testinpython" )
 
     # Subscribe first
