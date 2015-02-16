@@ -11,7 +11,6 @@ void *rcv_messages(void *threadid)
     long tid;
     tid = (long)threadid;
     int rc = dmw_run();
-    printf( "Exited: %d!\n", rc );
 }
 
 void *rcv_messages2(void *threadid)
@@ -20,17 +19,24 @@ void *rcv_messages2(void *threadid)
     char *errstr;
 
     tid = (long)threadid;
-    dmw_init_sub();
 
-    int rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print, NULL );
+    int rc = dmw_init_sub();
     if ( rc != 0 ) {
-        printf("Ok, failed because need to init first.\n" );
         dmw_get_error( &errstr );
         printf( "%s\n", errstr );
-    }
+        return;
+    }    
+
+    rc = dmw_subscribe( "telemetry", "position", NULL, subscription_print, NULL );
+    if ( rc != 0 ) {
+        dmw_get_error( &errstr );
+        printf( "%s\n", errstr );
+        return;
+    }    
+
+    printf( "Now subscribed. Let's listen for messages\n" );
 
     rc = dmw_run();
-    printf( "Exited: %d!\n", rc );
 }
 
 int main (int argc, char *argv[] )
@@ -39,14 +45,20 @@ int main (int argc, char *argv[] )
     char *errstr;
     pthread_t thread;
 
+    dmw_init();
+
     // may not use capitals
     test_init_fail_function( "abcdeF" );
     // may not use non isalnum or spaces
     test_init_fail_function( "abc 235" );
     // 33 is not allowed
     test_init_fail_function( "abcdefghijklmnopqrstuvwxyz1234567" );
-    
-    dmw_init_pub( "abcdefghijklmnopq1234567890" );
+
+    rc = dmw_init_pub( "abcdefghijklmnopq1234567890" );
+    if ( rc != 0 ) {
+        dmw_get_error( &errstr );
+        printf( "%s\n", errstr );
+    } 
     
     rc = pthread_create(&thread, NULL, rcv_messages, (void *)1);
     usleep( 500000 );
@@ -60,9 +72,7 @@ int main (int argc, char *argv[] )
 
     // now using correctly separate thread to keep correct context.
     rc = pthread_create(&thread, NULL, rcv_messages2, (void *)1);
-    usleep( 500000 );
-
-    printf( "Ok, subscribed. That went well. Let's publish on that topic\n" );
+    usleep( 1000000 );
 
     rc = dmw_publish( "telemetry", "position", "hello", 5 );
     if ( rc <= 0 ) {

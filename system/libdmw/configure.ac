@@ -26,6 +26,7 @@ AC_HEADER_STDC
 AC_TYPE_SIZE_T
 
 PKG_CHECK_MODULES([ZEROMQ], libzmq >= 4.0.5)
+PKG_CHECK_MODULES([AVAHI], avahi-client >= 0.6.31)
 
 # distribute additional compiler and linker flags
 # --> set these variables instead of CXXFLAGS or LDFLAGS

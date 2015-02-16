@@ -3,6 +3,6 @@
 libdmw.a
 libdmw.pc
 .libs/
-libdmw.la
-libdmw.lo
+*.la
+*.lo
 

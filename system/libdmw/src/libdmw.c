@@ -4,6 +4,8 @@
 #include "zhelpers.h"
 #include "uthash.h"
 
+#include "dmw_avahi.h"
+
 #define MAX_APP_NAME      32
 #define ERR_STRING_LEN    256
 #define MAX_TOPIC_LEN     128
@@ -15,6 +17,11 @@ static void *context = NULL;
 static void *subscriber = NULL;
 static void *publisher = NULL;
 
+static char pub_ip[ 17 ] = {"\0"};
+static char sub_ip[ 17 ] = {"\0"};
+static int  pub_port = 0;
+static int  sub_port = 0;
+
 struct subscription_t {
     char topic[MAX_TOPIC_LEN]; /* key */
     msg_callback_t *cb;
@@ -25,10 +32,36 @@ struct subscription_t {
 struct subscription_t *subscriptions = NULL;
 
 static int get_topic( char *topic, const char *msg_class, const char *msg_name, const char *sender );
+static int do_avahi( void );
+
+int dmw_init()
+{
+    if ( ! context ) {
+        context = zmq_ctx_new ();
+        if ( do_avahi() != 0 ) {
+            strcpy( lasterr, "Failed to resolve broker location through zero conf networking." );
+            return -9;
+        }
+    } else {
+        strcpy( lasterr, "Context already initialized." );
+        return -8;
+    }
+}
 
 int dmw_init_pub( const char *name )
 {
     int i = 0;
+    char url[64] = {"\0"};
+
+    if ( !context ) {
+        strcpy( lasterr, "Cannot initialize pub. Must call dmw_init first." );
+        return -9;
+    }
+
+    if ( publisher ) {
+        strcpy( lasterr, "Publishing already initialized." );
+        return -8;
+    }
 
     if (strlen( name ) > MAX_APP_NAME ) {
         strcpy( lasterr, "Application name too long." );
@@ -42,11 +75,9 @@ int dmw_init_pub( const char *name )
     }
     strcpy( appname, name );
 
-    if ( !context ) {
-        context = zmq_ctx_new ();
-    }
     publisher = zmq_socket (context, ZMQ_PUB);
-    zmq_connect (publisher, "tcp://localhost:5557");
+    sprintf( url, "tcp://%s:%d", pub_ip, pub_port );
+    zmq_connect (publisher, url );
 
     return 0;
 }
@@ -54,12 +85,21 @@ int dmw_init_pub( const char *name )
 int dmw_init_sub( void )
 {
     int i = 0;
+    char url[64] = {"\0"};
 
     if ( !context ) {
-        context = zmq_ctx_new ();
+        strcpy( lasterr, "Cannot initialize sub. Must call dmw_init first." );
+        return -9;
     }
+
+    if ( subscriber ) {
+        strcpy( lasterr, "Subscriptions already initialized." );
+        return -8;
+    }
+
     subscriber = zmq_socket (context, ZMQ_SUB);
-    zmq_connect (subscriber, "tcp://localhost:5558");
+    sprintf( url, "tcp://%s:%d", sub_ip, sub_port );
+    zmq_connect (subscriber, url);
 
     return 0;
 }
@@ -75,6 +115,7 @@ int dmw_subscribe( const char *msg_class, const char *msg_name, const char *send
 
     int rc = get_topic( buf, msg_class, msg_name, sender );
     if ( rc != 0 ) {
+        strcpy( lasterr, "Get topic failed." );
         return rc;
     }
 
@@ -182,8 +223,6 @@ int dmw_run()
             }
         }
 
-        printf( "topic: %s, find str: %08x\n", topic, s );
-
         if ( s != NULL ) {
             s->cb( msg_class, msg_name, sender, msg, s->user_data );
         }
@@ -223,6 +262,25 @@ static int get_topic( char *topic, const char *msg_class, const char *msg_name, 
     } else {
         // only msg class 
         sprintf( topic, "%s", msg_class );
+    }
+    return 0;
+}
+
+static int do_avahi( void ) {
+    if ( avahi_init( "_dmwpub._tcp" ) != 0 ) {
+        strcpy( lasterr, "Failed to initialize zero-conf networking." );
+        return -1;
+    }
+    if ( avahi_loop( 5000 ) == 0 ) {
+        avahi_get_pub_service( pub_ip, &pub_port );
+    }
+
+    if ( avahi_init( "_dmwsub._tcp" ) != 0 ) {
+        strcpy( lasterr, "Failed to initialize zero-conf networking." );
+        return -1;
+    }
+    if ( avahi_loop( 5000 ) == 0 ) {
+        avahi_get_sub_service( sub_ip, &sub_port );
     }
     return 0;
 }
