@@ -1,5 +1,6 @@
 import zmq
 from dmwzeroconf import ServiceResolver
+import redis
 
 #
 # sudo apt-get install libavahi-compat-libdnssd-dev
@@ -22,6 +23,7 @@ subport = None
 pubip = None
 pubport = None
 running = True
+r = None
 
 subscriptions = {}
 
@@ -56,15 +58,17 @@ def init():
     global subport
     global pubip 
     global pubport
+    global r
 
     if context != None:
         raise DmwException( "Library already initialized." )
     context = zmq.Context()
 
-
     resolver = ServiceResolver()
     subip, subport = resolver.resolve_record( "_dmwsub._tcp" )
     pubip, pubport = resolver.resolve_record( "_dmwpub._tcp" )
+
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 def init_pub( name ):
     global appname
@@ -161,4 +165,52 @@ def cancel():
     global running
 
     running = False
+
+def add_member( msg_class, msg_name, sender ):
+    key = "%s.%s"%( msg_class, msg_name )
+    if r.exists( key ):
+        if r.sismember( key, sender ):
+            return
+    r.sadd( key, sender )
+
+def is_member( msg_class, msg_name, sender ):
+    key = "%s.%s"%( msg_class, msg_name )
+    if r.exists( key ):
+        if r.sismember( key, sender ):
+            key = "%s.%s.%s"%( msg_class, msg_name, sender )
+            if r.exists( key ):
+                return True
+    return False
+
+def get_members( msg_class, msg_name ):
+    key = "%s.%s"%( msg_class, msg_name )
+    if r.exists( key ):
+        return r.smembers( key )
+    return []
+
+def store( msg_class, msg_name, sender, data, expire=None ):
+    key = "%s.%s.%s"%( msg_class, msg_name, sender )
+    r.set( key, data )
+    if expire != None and isinstance( expire, int ):
+        r.expire( key, expire )
+
+def retrieve( msg_class, msg_name, sender ):
+    key = "%s.%s.%s"%( msg_class, msg_name, sender )
+    if r.exists( key ):
+        return r.get( key )
+    return None
+
+def store_set( msg_class, msg_name, sender, data, expire=None ):
+    add_member( msg_class, msg_name, sender )
+    key = "%s.%s.%s"%( msg_class, msg_name, sender )
+    r.set( key, data )
+    if expire != None and isinstance( expire, int ):
+        r.expire( key, expire )
+
+def retrieve_set( msg_class, msg_name, sender ):
+    if is_member( msg_class, msg_name, sender ):
+        key = "%s.%s.%s"%( msg_class, msg_name, sender )
+        if r.exists( key ):
+            return r.get( key )
+    return None
 

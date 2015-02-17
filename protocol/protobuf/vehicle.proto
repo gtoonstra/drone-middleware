@@ -6,6 +6,24 @@ message Position
     required float ecef_x = 2;
     required float ecef_y = 3;
     required float ecef_z = 4;
-    optional string vehicle_tag = 5;
+    required int32 lat = 5;
+    required int32 lon = 6;
+    required float alt = 7;
+    optional string vehicle_tag = 8;
+}
+
+//type	uint8_t	Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
+//autopilot	uint8_t	Autopilot type / class. defined in MAV_AUTOPILOT ENUM
+//base_mode	uint8_t	System mode bitfield, see MAV_MODE_FLAG ENUM in mavlink/include/mavlink_types.h
+//custom_mode	uint32_t	A bitfield for use for autopilot-specific flags.
+//system_status	uint8_t	System status flag, see MAV_STATE ENUM
+//mavlink_version
+
+message HeartBeat
+{
+    required string uavtype = 1;
+    required string autopilot = 2;
+    required int32 vehicle_id = 3;
+    required string vehicle_tag = 4;
 }
 
