@@ -1,0 +1,16 @@
+
+// Run the sim_vehicle ardupilot simulator once to generate the elf file.
+// Stop everything, then run it manually, each in a different console:
+
+1> /work/ardupilot/Tools/autotest/pysim/sim_multicopter.py --home=-35.363261,149.165230,584,353 --simin=127.0.0.1:5502 --simout=127.0.0.1:5501 --fgout=127.0.0.1:5503
+
+2> /tmp/ArduCopter.build/ArduCopter.elf -I0
+
+3> mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 --cmd=
+
+// Arducopter.elf opens port tcp 5760, to which mavproxy connects. mavproxy receives new state information from simulator from port tcp 5501
+// 5502 is a udp port connection.
+
+4: Run 'python mavlink_vehicle.py' to connect to ardu sim
+5: Run 'python mavlink_ground.py' to create a socket that a mavproxy can connect to over TCP
+

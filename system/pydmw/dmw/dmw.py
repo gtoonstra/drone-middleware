@@ -21,6 +21,7 @@ subip = None
 subport = None
 pubip = None
 pubport = None
+running = True
 
 subscriptions = {}
 
@@ -60,6 +61,7 @@ def init():
         raise DmwException( "Library already initialized." )
     context = zmq.Context()
 
+
     resolver = ServiceResolver()
     subip, subport = resolver.resolve_record( "_dmwsub._tcp" )
     pubip, pubport = resolver.resolve_record( "_dmwpub._tcp" )
@@ -87,9 +89,11 @@ def init_pub( name ):
 def init_sub():
     global context
     global subscriber
+    global running 
 
     if context == None:
         raise DmwException( "Initialize library first with init()." )
+    running = True
 
     if subscriber != None:
         raise DmwException( "Subscription side already initialized." )
@@ -132,11 +136,12 @@ def publish( msg_class, msg_name, data ):
 
 def loop():
     global subscriber
+    global running 
 
     if subscriber == None:
         raise DmwException( "Subscribers are not initialized. Call dwm_init_sub first." )
 
-    while True:
+    while running:
         msgs = subscriber.recv_multipart()
         topic = msgs[0]
         data = msgs[1]
@@ -151,4 +156,9 @@ def loop():
         elif subscriptions.has_key( elems[0] ):
             cb = subscriptions[ elems[0] ]
             cb( elems[0], elems[1], elems[2], data )
+
+def cancel():
+    global running
+
+    running = False
 

@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+   <name replace-wildcards="yes">Drone Middleware on %h</name>
+   <service>
+   <type>_dmwpub._tcp</type>
+   <port>5557</port>
+   <txt-record>action=publish</txt-record>
+   </service>
+   <service>
+   <type>_dmwsub._tcp</type>
+   <port>5558</port>
+   <txt-record>action=subscribe</txt-record>
+   </service>
+</service-group>
+
