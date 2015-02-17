@@ -1,5 +1,5 @@
 import zmq
-from dmw_zeroconf import ServiceResolver
+from dmwzeroconf import ServiceResolver
 
 #
 # sudo apt-get install libavahi-compat-libdnssd-dev

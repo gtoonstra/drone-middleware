@@ -19,7 +19,6 @@ class SubscriptionThread(threading.Thread):
         dmw.stop()
 
     def forward_message( self, msg_class, msg_name, sender, message ):
-        print "received ground msg from %s.%s.%s"% ( msg_class, msg_name, sender )
         self.conn.send( message )
 
 if __name__ == "__main__":

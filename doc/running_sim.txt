@@ -6,7 +6,7 @@
 
 2> /tmp/ArduCopter.build/ArduCopter.elf -I0
 
-3> mavproxy.py --master tcp:127.0.0.1:5760 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 --cmd=
+3> mavproxy.py --master tcp:127.0.0.1:5400 --sitl 127.0.0.1:5501 --out 127.0.0.1:14550 --out 127.0.0.1:14551 --cmd=
 
 // Arducopter.elf opens port tcp 5760, to which mavproxy connects. mavproxy receives new state information from simulator from port tcp 5501
 // 5502 is a udp port connection.

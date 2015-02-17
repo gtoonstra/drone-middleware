@@ -11,6 +11,7 @@ def read(fname):
 setup(
     name = "dmw",
     version = "0.1",
+    zip_safe=True,
     author = "Gerard Toonstra",
     author_email = "gtoonstra",
     description = ("Support library for python dmw"),
@@ -21,8 +22,10 @@ setup(
     long_description=read('README'),
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "Topic :: Utilities",
+        "Topic :: Scientific/Engineering",
         "License :: OSI Approved :: ISC License",
+        "Programming Language :: Python :: 2.7",
     ],
+    install_requires=['pybonjour', 'pymavlink>=1.1.2']
 )
 

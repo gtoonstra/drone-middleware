@@ -1,0 +1,11 @@
+package vehicle;
+
+message Position
+{
+    required int32 vehicle_id = 1;
+    required float ecef_x = 2;
+    required float ecef_y = 3;
+    required float ecef_z = 4;
+    optional string vehicle_tag = 5;
+}
+

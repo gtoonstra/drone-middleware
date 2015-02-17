@@ -3,6 +3,8 @@ import sys
 
 from pymavlink import mavutil
 import dmw
+from dmw import dmwconversions
+from vehicle_pb2 import Position
 
 class SubscriptionThread(threading.Thread):
     def __init__( self, mavlink ):
@@ -16,7 +18,6 @@ class SubscriptionThread(threading.Thread):
         print "exited subscription thread"
 
     def forward_message( self, msg_class, msg_name, sender, message ):
-        print "received vehicle msg from %s.%s.%s"%( msg_class, msg_name, sender )
         self.mavlink.write( message )
 
 def wait_heartbeat(m):
@@ -26,23 +27,28 @@ def wait_heartbeat(m):
     bytemsg = msg.get_msgbuf()
     dmw.publish( "mavlink", "opaque", bytemsg )
 
-def process_messages(m):
+def process_messages(c,m):
     '''show incoming mavlink messages'''
     while True:
         msg = m.recv_match(blocking=True)
         if not msg:
             return
-        if msg.get_type() == "BAD_DATA":
-            if mavutil.all_printable(msg.data):
-                sys.stdout.write(msg.data)
-                sys.stdout.flush()
         else:
+            if msg.get_type() == 'GLOBAL_POSITION_INT':
+                pos = Position()
+                pos.ecef_x, pos.ecef_y, pos.ecef_z = c.wgs2ecef( float(msg.lat) / 1E7, float(msg.lon) / 1E7, float(msg.alt) / 1000 )
+                pos.vehicle_id = 255
+                pos.vehicle_tag = "255"
+                dmw.publish( "vehicle", "position", pos.SerializeToString() )
+
             bytemsg = msg.get_msgbuf()
             dmw.publish( "mavlink", "opaque", bytemsg )
 
 if __name__ == "__main__":
     dmw.init()
     dmw.init_pub( "255" )
+
+    conv = dmwconversions.Conversions()
 
     # create a mavlink tcp instance
     master = mavutil.mavlink_connection( "tcp:127.0.0.1:5760", baud=115200, source_system=255 )
@@ -56,5 +62,5 @@ if __name__ == "__main__":
     wait_heartbeat(master)
 
     # Process messages received from apm and send them onto the bus in "opaque" format
-    process_messages( master )
+    process_messages( conv, master )
 
