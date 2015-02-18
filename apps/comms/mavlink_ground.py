@@ -46,7 +46,8 @@ def find_ap_type( key ):
 class SubscriptionThread(threading.Thread):
     def __init__( self, conn ):
         threading.Thread.__init__(self)
-        self.master = mavutil.mavlink_connection( "udp:127.0.0.1:12345" )
+        self.master = mavutil.mavlink_connection( "udp:127.0.0.1:12345", source_system=1 )
+        self.master.mav = mavutil.mavlink.MAVLink(self.master, srcSystem=self.master.source_system, srcComponent=1)
         self.conn = conn
 
     def run(self):
@@ -66,14 +67,18 @@ class SubscriptionThread(threading.Thread):
     def forward_heartbeat( self, msg_class, msg_name, sender, message ):
         hb = HeartBeat()
         hb.ParseFromString( message )
+        self.master.mav.seq = hb.seq
         msg = self.master.mav.heartbeat_encode( find_uav_type( hb.uavtype ), find_ap_type( hb.autopilot ), hb.base_mode, hb.custom_mode, hb.system_status )
-        print(msg)
+        print "heartbeat: [", msg.get_msgbuf().encode('hex')
         self.conn.send( msg.get_msgbuf() )
 
     def forward_position( self, msg_class, msg_name, sender, message ):
         pos = Position()
         pos.ParseFromString( message )
-        self.conn.send( message )
+        self.master.mav.seq = pos.seq
+        msg = self.master.mav.global_position_int_encode( pos.time_boot_ms, pos.lat, pos.lon, int(pos.alt * 1000), int(pos.relalt * 1000), pos.vx, pos.vy, pos.vz, int(pos.hdg * 100))
+        print msg.alt, pos.alt
+        self.conn.send( msg.get_msgbuf() )
 
 if __name__ == "__main__":
     enumUavTypes()

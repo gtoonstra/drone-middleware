@@ -61,6 +61,7 @@ def wait_heartbeat(m):
     msg = m.recv_match(type='HEARTBEAT', blocking=True)
     print("Heartbeat from APM (system %u component %u)" % (m.target_system, m.target_system))
     bytemsg = msg.get_msgbuf()
+    print "Heartbeat [", bytemsg.encode('hex')
     dmw.publish( "mavlink", "opaque", bytemsg )
 
 def process_messages(c,m):
@@ -72,10 +73,20 @@ def process_messages(c,m):
         else:
             if msg.get_type() == 'GLOBAL_POSITION_INT':
                 pos = Position()
-                pos.ecef_x, pos.ecef_y, pos.ecef_z = c.wgs2ecef( float(msg.lat) / 1E7, float(msg.lon) / 1E7, float(msg.alt) / 1000 )
-                pos.lat, pos.lon, pos.alt = msg.lat, msg.lon, msg.alt / 1000
+                pos.ecef_x, pos.ecef_y, pos.ecef_z = c.wgs2ecef( float(msg.lat) / 1E7, float(msg.lon) / 1E7, float(msg.alt) / 1000.0 )
+                pos.lat, pos.lon, pos.alt = msg.lat, msg.lon, float(msg.alt) / 1000.0
                 pos.vehicle_id = 255
                 pos.vehicle_tag = "255"
+                pos.time_boot_ms = msg.time_boot_ms;
+                pos.relalt = float( msg.relative_alt ) / 1000.0
+                pos.vx = msg.vx;
+                pos.vy = msg.vy;
+                pos.vz = msg.vz;
+                pos.hdg = float( msg.hdg ) / 100.0
+                pos.seq = msg.get_seq()
+
+                print msg.alt, pos.alt
+
                 dmw.publish( "vehicle", "position", pos.SerializeToString() )
                 dmw.store( "vehicle", "position", str(pos.vehicle_id), pos.SerializeToString() )
             elif msg.get_type() == 'HEARTBEAT':
@@ -89,6 +100,7 @@ def process_messages(c,m):
                 hb.system_status = msg.system_status
                 hb.mavlink_version = msg.mavlink_version
                 hb.custom = ''
+                hb.seq = msg.get_seq()
                 dmw.publish( "vehicle", "heartbeat", hb.SerializeToString() )
                 dmw.store_set( "vehicle", "heartbeat", str(hb.vehicle_id), hb.SerializeToString(), expire=60 )
             else:

@@ -2,14 +2,21 @@ package vehicle;
 
 message Position
 {
-    required int32 vehicle_id = 1;
-    required float ecef_x = 2;
-    required float ecef_y = 3;
+    required int32 vehicle_id = 1;  // vehicle integer id
+    required float ecef_x = 2;      // ecef_* in meters
+    required float ecef_y = 3;      
     required float ecef_z = 4;
-    required int32 lat = 5;
+    required int32 lat = 5;         // lat, lon in 1E7
     required int32 lon = 6;
-    required float alt = 7;
-    optional string vehicle_tag = 8;
+    required float alt = 7;         // alt in m
+    optional string vehicle_tag = 8;    // textual desc for vehicle
+    required int32 time_boot_ms = 9;
+    required float relalt = 10;     // alt in m
+    required int32 vx = 11;         // v* in cm/s
+    required int32 vy = 12;
+    required int32 vz = 13;
+    required float hdg = 14;        // heading in degrees
+    required int32 seq = 15;
 }
 
 //type	uint8_t	Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)
@@ -30,5 +37,6 @@ message HeartBeat
     required int32 system_status = 7;
     required int32 mavlink_version = 8;
     required string custom = 9;
+    required int32 seq = 10;
 }
 

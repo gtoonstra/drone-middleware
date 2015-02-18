@@ -56,10 +56,15 @@ def process_messages( ac_id, msg ):
         hb.autopilot = "pprz"
         hb.vehicle_id = ac_id
         hb.vehicle_tag = str(ac_id)
+        hb.base_mode = 0
+        hb.custom_mode = 0
+        hb.system_status = 0
+        hb.mavlink_version = 3
+        hb.custom = msg.get_field( 0 )
         dmw.publish( "vehicle", "heartbeat", hb.SerializeToString() )
         dmw.store_set( "vehicle", "heartbeat", str(hb.vehicle_id), hb.SerializeToString(), expire=60 )
     else:
-        dmw.publish( "pprz", "opaque", "%d %s"%( ac_id, msg.to_original_msg() ) )
+        dmw.publish( "pprz", "opaque", "%d %s"%( ac_id, msg.payload_to_ivy_string() ) )
 
 def signal_handler(signal, frame):
     global interface
