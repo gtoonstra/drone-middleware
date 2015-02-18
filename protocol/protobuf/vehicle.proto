@@ -25,5 +25,10 @@ message HeartBeat
     required string autopilot = 2;
     required int32 vehicle_id = 3;
     required string vehicle_tag = 4;
+    required int32 base_mode = 5;
+    required int32 custom_mode = 6;
+    required int32 system_status = 7;
+    required int32 mavlink_version = 8;
+    required string custom = 9;
 }
 

@@ -14,6 +14,8 @@ def print_message( msg_class, msg_name, sender, message ):
         msg = messageLookup[ msgkey ]()
         msg.ParseFromString( message )
         print( "Contents: %s"%( msg ) )
+    else:
+        print( "Contents are unknown or opaque" )
 
 if __name__ == "__main__":
 

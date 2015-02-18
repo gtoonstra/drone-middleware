@@ -13,24 +13,24 @@ uavtypes = {}
 aptypes = {}
 
 def enumUavTypes():
-    global uavtypes
+    global aptypes
 
     allEnums = dir(common)    
     for entry in allEnums:
         if entry.startswith( "MAV_AUTOPILOT_" ):
             val = entry[ len("MAV_AUTOPILOT_" ): ]
             key = getattr( common, entry )
-            uavtypes[ key ] = val
+            aptypes[ key ] = val
 
 def enumApTypes():
-    global aptypes
+    global uavtypes
 
     allEnums = dir(common)    
     for entry in allEnums:
         if entry.startswith( "MAV_TYPE_" ):
             val = entry[ len("MAV_TYPE_" ): ]
             key = getattr( common, entry )
-            aptypes[ key ] = val
+            uavtypes[ key ] = val
 
 def find_uav_type( key ):
     if uavtypes.has_key( key ):
@@ -78,17 +78,21 @@ def process_messages(c,m):
                 pos.vehicle_tag = "255"
                 dmw.publish( "vehicle", "position", pos.SerializeToString() )
                 dmw.store( "vehicle", "position", str(pos.vehicle_id), pos.SerializeToString() )
-            if msg.get_type() == 'HEARTBEAT':
+            elif msg.get_type() == 'HEARTBEAT':
                 hb = HeartBeat()
                 hb.uavtype = find_uav_type( msg.type )
                 hb.autopilot = find_ap_type( msg.autopilot )
                 hb.vehicle_id = 255
                 hb.vehicle_tag = "255"
+                hb.base_mode = msg.base_mode
+                hb.custom_mode = msg.custom_mode
+                hb.system_status = msg.system_status
+                hb.mavlink_version = msg.mavlink_version
+                hb.custom = ''
                 dmw.publish( "vehicle", "heartbeat", hb.SerializeToString() )
                 dmw.store_set( "vehicle", "heartbeat", str(hb.vehicle_id), hb.SerializeToString(), expire=60 )
-
-            bytemsg = msg.get_msgbuf()
-            dmw.publish( "mavlink", "opaque", bytemsg )
+            else:
+                dmw.publish( "mavlink", "opaque", msg.get_msgbuf() )
 
 if __name__ == "__main__":
     enumUavTypes()
