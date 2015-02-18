@@ -15,8 +15,9 @@ message Position
     required float vx = 11;         // v* in m/s
     required float vy = 12;
     required float vz = 13;
-    required float hdg = 14;        // heading in degrees
-    required int32 seq = 15;
+    required float vground = 14;    // ground speed in m/s
+    required float hdg = 15;        // heading in degrees
+    required int32 seq = 16;
 }
 
 //type	uint8_t	Type of the MAV (quadrotor, helicopter, etc., up to 15 types, defined in MAV_TYPE ENUM)

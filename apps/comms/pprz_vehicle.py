@@ -11,6 +11,8 @@ import time
 from pymavlink import mavutil 
 import math
 
+from ivy.std_api import *
+
 PPRZ_SRC = getenv("PAPARAZZI_SRC", path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../../')))
 sys.path.append(PPRZ_SRC + "/sw/lib/python")
 
@@ -42,6 +44,18 @@ class Vehicle(object):
         self.ap_mode = ap_modes[ "MANUAL" ]
         self.gps_fix = gps_modes[ "NOFIX" ]
         self.killed = False
+        self.heading = 0.0
+        self.lat = 0.0
+        self.lon = 0.0
+        self.alt = 0.0
+        self.relalt = 0.0
+        self.unix_time = 0
+        self.course = 0.0
+        self.sog = 0.0
+        self.airspeed = 0.0
+        self.vx = 0.0
+        self.vy = 0.0
+        self.vz = 0.0
 
 class SubscriptionThread(threading.Thread):
     def __init__( self, interface ):
@@ -77,7 +91,7 @@ def process_messages( ac_id, msg ):
     if ac_id != 0:
         return
 
-    if msg.name == 'AP_STATUS':        
+    if msg.name == 'AP_STATUS':
         vehicle.ap_mode = ap_modes[ msg.ap_mode ]
         vehicle.gps_fix = gps_modes[ msg.gps_mode ]
         if msg.kill_mode == "ON":
@@ -87,7 +101,7 @@ def process_messages( ac_id, msg ):
         vehicle.flight_time = msg.flight_time
         # <field name="state_filter_mode" type="string" values="UNKNOWN|INIT|ALIGN|OK|GPS_LOST|IMU_LOST|COV_ERR|IR_CONTRAST|ERROR"/>
 
-    if msg.name == 'FLIGHT_PARAM':
+    elif msg.name == 'FLIGHT_PARAM':
         vehicle.heading = float(msg.heading)
         vehicle.lat = float(msg.lat)
         vehicle.lon = float(msg.long)
@@ -114,6 +128,7 @@ def process_messages( ac_id, msg ):
         pos.vx = vehicle.vx
         pos.vy = vehicle.vy
         pos.vz = vehicle.vz
+        pos.vground = vehicle.sog
         pos.hdg = vehicle.heading
         pos.seq = update_seq()
 
@@ -124,10 +139,10 @@ def process_messages( ac_id, msg ):
  #   <field name="pitch"  type="float" unit="deg"/>
   #  <field name="itow"   type="uint32" unit="ms"/>
 
-    if msg.name == 'TELEMETRY_STATUS':
+    elif msg.name == 'TELEMETRY_STATUS':
         hb = HeartBeat()
-        hb.uavtype = "unknown"
-        hb.autopilot = "pprz"
+        hb.uavtype = "GENERIC"
+        hb.autopilot = "PPZ"
         hb.vehicle_id = vehicle.ac_id
         hb.vehicle_tag = str(vehicle.ac_id)
         hb.base_mode = vehicle.ap_mode
@@ -138,12 +153,18 @@ def process_messages( ac_id, msg ):
         dmw.publish( "vehicle", "heartbeat", hb.SerializeToString() )
         dmw.store_set( "vehicle", "heartbeat", str(hb.vehicle_id), hb.SerializeToString(), expire=60 )
     else:
-        dmw.publish( "pprz", "opaque", "%d %s"%( ac_id, msg.payload_to_ivy_string() ) )
+        dmw.publish( "pprz", "opaque", "%s %s %s"%( msg.msg_class, msg.name, msg.payload_to_ivy_string() ) )
 
 def signal_handler(signal, frame):
     global interface
     print "Attempting to stop interface"
     interface.shutdown()
+
+def on_aircrafts_msg( self, agent, *larg ):
+    dmw.publish( "pprz", "opaque", "%s %s AIRCRAFTS %s"%( larg[0], larg[1], larg[2] ) )
+
+def on_config_msg( self, agent, *larg ):
+    dmw.publish( "pprz", "opaque", "%s %s CONFIG %s"%( larg[0], larg[1], larg[2] ) )
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
@@ -158,7 +179,9 @@ if __name__ == "__main__":
     dmw.init_pub( str(vehicle.ac_id) )
 
     interface = IvyMessagesInterface( process_messages, verbose=True )
-
+    ivyId1 = IvyBindMsg( on_aircrafts_msg, '((\\S*) (\\S*) AIRCRAFTS (\\S*))')
+    ivyId1 = IvyBindMsg( on_config_msg, '((\\S*) (\\S*) CONFIG (.*))')
+    
     # Subscribe to messages from gcs.
     t = SubscriptionThread( interface )
     t.setDaemon( True )

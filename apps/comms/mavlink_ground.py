@@ -1,7 +1,9 @@
 import threading
 import sys
+import errno
 
 import dmw
+from dmw import DmwException
 import socket
 from pymavlink import mavutil
 
@@ -52,35 +54,53 @@ class SubscriptionThread(threading.Thread):
         self.master.mav = mavutil.mavlink.MAVLink(self.master, srcSystem=self.master.source_system, srcComponent=1)
         self.conn = conn
 
+    def send( self, buf ):
+        try:
+            self.conn.send( buf )
+        except socket.error as e:
+            if isinstance(e.args, tuple):
+                print "errno is %d" % e[0]
+                if e[0] == errno.EPIPE:
+                   # remote peer disconnected
+                   print "Detected remote disconnect"
+                else:
+                   # determine and handle different error
+                   pass
+            else:
+                print "socket error ", e
+            self.conn.close()
+
     def run(self):
-        dmw.init_sub()
+        try:
+            dmw.init_sub()
+        except DmwException:
+            pass
+
         dmw.subscribe( "mavlink", "opaque", self.aircraft_id, self.forward_opaque ) 
         dmw.subscribe( "vehicle", "heartbeat", self.aircraft_id, self.forward_heartbeat ) 
         dmw.subscribe( "vehicle", "position", self.aircraft_id, self.forward_position ) 
         dmw.loop()
-        print "exited subscription thread"
+        print( "exited subscription thread" )
 
     def cancel(self):
-        dmw.stop()
+        dmw.cancel()
 
     def forward_opaque( self, msg_class, msg_name, sender, message ):
-        self.conn.send( message )
+        self.send( message )
 
     def forward_heartbeat( self, msg_class, msg_name, sender, message ):
         hb = HeartBeat()
         hb.ParseFromString( message )
         self.master.mav.seq = hb.seq
-        print "heartbeat"
         msg = self.master.mav.heartbeat_encode( find_uav_type( hb.uavtype ), find_ap_type( hb.autopilot ), hb.base_mode, hb.custom_mode, hb.system_status )
-        self.conn.send( msg.get_msgbuf() )
+        self.send( msg.get_msgbuf() )
 
     def forward_position( self, msg_class, msg_name, sender, message ):
         pos = Position()
         pos.ParseFromString( message )
         self.master.mav.seq = pos.seq
         msg = self.master.mav.global_position_int_encode( pos.time_boot_ms, int( pos.lat * 1E7 ), int( pos.lon * 1E7 ), int(pos.alt * 1000), int(pos.relalt * 1000), int(pos.vx*100), int(pos.vy*100), int(pos.vz*100), int(pos.hdg * 100))
-        print msg.alt, pos.alt
-        self.conn.send( msg.get_msgbuf() )
+        self.send( msg.get_msgbuf() )
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -110,12 +130,17 @@ if __name__ == "__main__":
 
         print 'Connected by', addr
 
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                continue
-            else:
-                dmw.publish( "mavlink", "opaque", data )
+        try:
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    continue
+                else:
+                    dmw.publish( "mavlink", "opaque", data )
+        except socket.error as e:
+            print("Client disconnected. Accepting another.")
+
         t.cancel()
 
+    print ("Exiting app")
 

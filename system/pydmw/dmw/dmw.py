@@ -142,8 +142,10 @@ def loop():
     global subscriber
     global running 
 
+    running = True
+
     if subscriber == None:
-        raise DmwException( "Subscribers are not initialized. Call dwm_init_sub first." )
+        raise DmwException( "Subscribers are not initialized. Call dmw_init_sub first." )
 
     while running:
         msgs = subscriber.recv_multipart()
@@ -163,6 +165,7 @@ def loop():
 
 def cancel():
     global running
+    global subscriber
 
     running = False
 

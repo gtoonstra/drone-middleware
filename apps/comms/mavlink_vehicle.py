@@ -6,6 +6,7 @@ import dmw
 from dmw import dmwconversions
 from vehicle_pb2 import Position
 from vehicle_pb2 import HeartBeat
+import math
 
 from pymavlink.dialects.v10 import common
 
@@ -64,7 +65,6 @@ def wait_heartbeat(m):
     msg = m.recv_match(type='HEARTBEAT', blocking=True)
     print("Heartbeat from APM (system %u component %u)" % (m.target_system, m.target_system))
     bytemsg = msg.get_msgbuf()
-    print "Heartbeat [", bytemsg.encode('hex')
     dmw.publish( "mavlink", "opaque", bytemsg )
 
 def process_messages(c,m):
@@ -87,10 +87,9 @@ def process_messages(c,m):
                 pos.vx = float(msg.vx) / 100.0;
                 pos.vy = float(msg.vy) / 100.0;
                 pos.vz = float(msg.vz) / 100.0;
+                pos.vground = math.sqrt( pos.vx*pos.vx + pos.vy*pos.vy )
                 pos.hdg = float( msg.hdg ) / 100.0
                 pos.seq = msg.get_seq()
-
-                print msg.alt, pos.alt
 
                 dmw.publish( "vehicle", "position", pos.SerializeToString() )
                 dmw.store( "vehicle", "position", str(pos.vehicle_id), pos.SerializeToString() )
@@ -104,7 +103,6 @@ def process_messages(c,m):
                 hb.custom_mode = msg.custom_mode
                 hb.system_status = msg.system_status
                 hb.mavlink_version = msg.mavlink_version
-                hb.custom = ''
                 hb.seq = msg.get_seq()
                 dmw.publish( "vehicle", "heartbeat", hb.SerializeToString() )
                 dmw.store_set( "vehicle", "heartbeat", str(hb.vehicle_id), hb.SerializeToString(), expire=60 )
