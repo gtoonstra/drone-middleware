@@ -1,16 +1,15 @@
 # drone-middleware
-Drone middleware aims to make it easier to develop or put your own ground station together.
-Where normal ground stations are usually large, monolith applications with most of the code implemented
-in the same process, drone middleware takes a distributed and heterogeneous approach to solving these problems.
+Drone middleware aims to become a platform for developers, researchers and organizations that want to 
+integrate uav data with their own processes, especially for more dynamic missions where the flight plan
+and circumstances change all the time, like in SAR operations.
 
-The idea is that it's easier for non-expert users to adjust existing code, put their own ground stations together
-by selecting which processes are running and of course make their own contributions.
+The drone middleware can also be used to separate the usual concerns of a GCS and provide a testing and
+research bed on how those sub-processes can work together. This stimulates creating libraries in the process,
+which makes reuse in the same project and in different projects a lot easier.
 
-The middleware uses a broker for sending messages across the entire platform. The idea is to create a set of processes
-that solve specific planning/alerting/monitoring/retrieval problems and use your language of choice to solve those.
-
-The main purpose of the middleware project is to make ground control software and algorithms reusable and to give it 
-the ability to evolve over time without having to rewrite algorithms in different languages. 
+The middleware also specifies a set of basic data messages that are received from other systems, like
+drawing lines, icons and areas that are used to specify search areas, no-fly zones or points of interest
+to circle. This supports the uav operator to replan their flight, as they have that data on-screen already.
 
 ## License
 
@@ -28,7 +27,7 @@ ZeroMQ uses the LGPL + static linking exception:
 
 > http://zeromq.org/area:licensing
 
-In short, you can use drone middleware in commercial applications and you only need to supply the copyright notice.
+In short, you can use drone middleware in commercial applications and you only need to retain the copyright notice.
 
 As per the licenses specification:
 
@@ -38,29 +37,28 @@ As per the licenses specification:
 
 ## Objectives
 
-* Provide an abstraction wrapper library for communications. The abstraction allows easier substitution of the underlying transport and solves some technical issues of the specific transport implementation.
-* Provide a means for "mission data storage". Processes can come and go and they use this storage to figure out the current state of the mission.
+* Provide an abstraction wrapper library for uav communications. This abstraction is minimal and only contains the most critical of uav data like position and flight plan.
+* Provide a means for "mission data storage". Processes can come and go and they use this storage to figure out the current state of the mission and uav's.
 * Provide a "task manager" that keeps track of running processes and which can reconfigure the platform when mission objectives change.
 * Allow for failure and rebooting of processes. Any process should be able to determine current mission status without being required to synchronize this with a vehicle that may be in the air.
-* Make it easier for companies and organizations to integrate a "dronecode" uav into their simulation or product.
-* Specify a standardized mechanism for storing large sets of mission data like pictures and how to get to those data items.
-* Specify a set of messages for ground control communications using a formal message definition. These are high level message definitions, not low-level drone messages/commands.
-* Provide "link" apps which, based on how the mission changes state in the middleware, can send messages towards the vehicle to update the mission plan.
-* Create an opaque bus to allow a "link" app and a "gcs" to connect and for a gcs to query current mission state from the middleware rather than the drone.
+* Make it easier for organizations to integrate a uav into their simulations.
+* Specify a standardized mechanism for storing sets of data and make it easier to retrieve them.
+* Specify a small set of drone commands that are common and allow the middleware to send those.
+* Use "opaque" tunnels to hook up a gcs and uav talking the same protocol, so you still have full access to all functionality.
 * Zero config networking. The abstraction libraries use bonjour to find out where to connect.
-* Provide an implementation of a simple ground control station as a set of interacting and cooperating processes on the middleware.
-* Provide a nodeJS server which hooks into the communication layer, but converts all bus messages in a binary format to json and vice versa (only those that are subscribed by a subscriber).
-* Allow reuse of the initial mission plan.
+* Provide a nodeJS server which hooks into the communication layer and converts this from protobuf to json, so that browsers and tablets are easier to integrate.
 * Create compressed packages of the mission after execution: gcs logs, streamed pics and video, mission data, uav logs, user commands, KML files, etc.
-* Allow a compressed package of log files to be replayed on the middleware with gcs and uav logs synchronized with each other.
+* Allow a compressed package of log files to be replayed on the middleware with gcs and uav logs synchronized with each other for review.
 
 ## Current status
 
-* There is a wrapper library for C/C++ and python. Checks need to be added and automated unit tests should be integrated into the build.
-* The development platform is Linux. It would be good to see if this can be built and run on windows and Mac OSX too.
-* No standard implementation yet.
-* No message specifications yet.
-* No bonjour (zero config) implementation yet.
+* There is a wrapper library for C/C++ and python. More testing is required on the reliability of those libraries and wrappers.
+* The development platform is Linux. It has not been tested on windows or mac osx yet.
+* There is not yet a standard, default implementation that can serve as a very basic gcs running on the middleware.
+* There are now vehicle messages, but many other messages need to be added.
+* Bonjour integration is done.
+* It's possible to send pprz vehicle data to either mavlink or pprz gcs's, where they show the position of that uav.
+* Opaque tunnels exist for mavlink and pprz drones. Pprz tunnels need some extra work due to complexities in the protocol.
 
 ## How to build
 
@@ -75,14 +73,17 @@ Then you need to have python installed and working and install the python zmq bi
 Then:
 
 * Clone the drone-middleware project from the github page.
-* Build the subprojects under 'broker' and 'libdmw' using autotools: 'autoconf', 'automake -a -c', './configure', 'make', 'sudo make install'
-* Go into the 'pydmw' project and install it: 'python setup.py build', then 'sudo python setup.py install'
+* Build the subprojects under 'broker' and 'libdmw' using autotools: `autoconf`, `automake -a -c`, `./configure`, `make`, `sudo make install`
+* Go into the 'pydmw' project and install it: `python setup.py build`, then `sudo python setup.py install`
+* Install python bonjour: `pip install py-bonjour`
 
 ## Running the middleware
 
 At the moment there's no task manager. You need to start the broker manually from the 'broker' directory and then applications
-will connect to your broker from there. You can see these connections being established in netstat -ant, ports 5557 and 5558.
-Eventually, the idea is to publish on bonjour where the broker is located, so it's easier to find other processes.
+will connect to your broker from there. You can see these connections being established in `netstat -ant`, ports 5557 and 5558.
+
+You can install the avahi service file in the `etc` directory into '/etc/avahi/services', which will allow the libraries to
+connect to the broker automatically.
 
 When the broker is started, you can simply import the 'dmw' module and use it like so:
 
@@ -100,6 +101,7 @@ When the broker is started, you can simply import the 'dmw' module and use it li
             dmw.loop()
 
     if __name__ == "__main__":
+        dmw.init()
         dmw.init_pub( "testinpython" )
         # Subscribe first on a separate thread (it enters a notification loop afterwards).
         t = SubscriptionThread()
@@ -111,15 +113,9 @@ When the broker is started, you can simply import the 'dmw' module and use it li
         # Give the thread time to process and receive the message.
         time.sleep(1)
 
-In real applications, you'd create a threading structure to deal with these messages. On GTK / python GUI apps for example you'd
-probably use the gevent loop, where you receive messages on a specific thread, but perhaps forward them as objects to the main loop
-of the application, which is the only one allowed to perform graphical updates.
+In GUI applications you'll need to consider how data/model changes on the bus can be applied to the screen, because only the
+app's main thread can update those components. The best way to do that is to receive the messages in any thread and then post
+them onto a queue to be processed when the app is idle.
 
-In other cases, you can just create a thread as shown and process them as such. Or if processing may take a long time, you may want 
-to spawn new threads to perform that processing outside the main subscription thread loop, so that messages never need to wait long to
-be picked up.
-
-The middleware doesn't even make an attempt to be clever, it only provides access to the message bus. You are responsible for further 
-integrating message flows into your application.
-
+In other cases, you can just create a thread as shown and process them in their own thread. 
 
